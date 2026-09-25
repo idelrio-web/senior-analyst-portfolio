@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Consumer Complaint Risk | Ivan Del Rio</title>
+  <meta name="description" content="Senior analyst case study of 42,426 Arizona consumer complaints from the CFPB.">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header"><nav class="wrap nav" aria-label="Primary navigation"><a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>Ivan Del Rio · Analytics</span></a><div class="nav-links"><a href="../index.html">Overview</a><a href="../methodology.html">Methods</a><a class="active" href="../index.html#case-studies">Case studies</a><a class="nav-cta" href="mailto:iv.antdo13@gmail.com">Contact</a></div></nav></header>
+  <main id="main">
+    <section class="page-hero"><div class="wrap"><div class="breadcrumb"><a href="../index.html">Portfolio</a><span>/</span><span>Consumer finance</span></div><p class="eyebrow">Case study 01 · CFPB Consumer Complaint Database</p><h1>Complaint concentration & operational risk</h1><p class="lede">A capacity-planning analysis of 42,426 Arizona complaints received in 2024, designed to separate process performance from portfolio concentration risk.</p><div class="inline-actions"><span class="status blue">Python / Pandas</span><span class="status green">Data quality passed</span><span class="status amber">Public administrative data</span></div></div></section>
+    <section><div class="wrap case-shell">
+      <article class="case-content">
+        <section id="brief"><p class="eyebrow">Decision brief</p><h2>Where should risk operations place capacity?</h2><p>A timely-response KPI can look excellent while volume exposure remains highly concentrated. The analysis therefore separates <b>execution quality</b> (timely response and routing speed) from <b>portfolio risk</b> (concentration by product, company, issue, and month).</p><div class="kpi-grid"><div class="kpi"><strong>42,426</strong><span>unique complaints</span></div><div class="kpi"><strong>99.68%</strong><span>timely-response rate</span></div><div class="kpi"><strong>80.93%</strong><span>credit-reporting share</span></div><div class="kpi"><strong>82.96%</strong><span>top-five company share</span></div></div><div class="decision"><strong>Executive recommendation</strong><p>Use a two-layer operating model: maintain broad service controls, but allocate specialist capacity and root-cause work to the concentrated credit-reporting and top-company segments.</p></div></section>
+
+        <section id="data"><p class="eyebrow">Data & grain</p><h2>Complaint-level administrative records</h2><p>The analytical grain is one CFPB complaint. The extract is limited to complaints with an Arizona mailing state and a received date from January 1 through December 31, 2024.</p><div class="table-wrap"><table><thead><tr><th>Field group</th><th>Examples</th><th>Analytical use</th></tr></thead><tbody><tr><td>Identity</td><td>Complaint ID</td><td>Uniqueness and record control</td></tr><tr><td>Time</td><td>Date received, date sent</td><td>Trend and routing lag</td></tr><tr><td>Taxonomy</td><td>Product, issue, sub-issue</td><td>Concentration and root-cause segmentation</td></tr><tr><td>Entity</td><td>Company, state, ZIP</td><td>Exposure and ownership</td></tr><tr><td>Outcome</td><td>Company response, timely response</td><td>Service-performance KPI</td></tr></tbody></table></div><p><a href="https://www.consumerfinance.gov/data-research/consumer-complaints/" target="_blank" rel="noreferrer">Official CFPB dataset and field reference ↗</a></p></section>
+
+        <section id="quality"><p class="eyebrow">Quality controls</p><h2>Trust before trend</h2><div class="finding-grid"><div class="finding"><b>100% unique IDs</b><p>42,426 records and 42,426 distinct complaint IDs; no deduplication loss.</p></div><div class="finding"><b>100% valid dates</b><p>All received timestamps parsed successfully and fell inside the stated period.</p></div><div class="finding"><b>100% Arizona scope</b><p>Every record retained the expected AZ state code after ingestion.</p></div><div class="finding"><b>0.07-hour median routing lag</b><p>The received-to-company-sent interval is near-real-time; negative lags are tested before use.</p></div></div><div class="warning decision"><strong>Interpretation control</strong><p>Complaint counts are not incidence rates. They reflect consumer behavior, awareness, CFPB intake, and company footprint—not only underlying product quality.</p></div></section>
+
+        <section id="findings"><p class="eyebrow">Findings</p><h2>High service performance, concentrated exposure</h2><figure class="chart"><img src="../assets/cfpb_product_mix.svg" alt="Horizontal bar chart showing Arizona complaint counts by product"><figcaption>Credit reporting dominates the product mix; counts are based on the filtered 2024 Arizona extract.</figcaption></figure><div class="finding-grid"><div class="finding"><b>Product concentration</b><p>Credit reporting accounts for 80.93% of all records, making aggregate KPIs highly sensitive to one operating domain.</p></div><div class="finding"><b>Company concentration</b><p>The five highest-volume companies account for 82.96% of complaints, supporting targeted governance reviews.</p></div><div class="finding"><b>Seasonality / trend</b><p>December is the peak month with 4,467 complaints; capacity plans should be refreshed using rolling monthly volume.</p></div><div class="finding"><b>Service execution</b><p>99.68% were marked timely, so improvement work should move beyond the headline SLA to recurrence and issue severity.</p></div></div><figure class="chart"><img src="../assets/cfpb_monthly.svg" alt="Line chart of monthly Arizona complaint volume in 2024"><figcaption>Monthly volume supports forecasting and staffing, but should be segmented before action.</figcaption></figure></section>
+
+        <section id="sql"><p class="eyebrow">SQL pattern</p><h2>Reusable Pareto analysis</h2><pre class="code"><code><span class="kw">WITH</span> company_volume <span class="kw">AS</span> (
+  <span class="kw">SELECT</span>
+    company,
+    <span class="fn">COUNT</span>(<span class="str">DISTINCT complaint_id</span>) <span class="kw">AS</span> complaints,
+    <span class="fn">AVG</span>(<span class="kw">CASE WHEN</span> timely_response = <span class="str">'Yes'</span> <span class="kw">THEN</span> 1.0 <span class="kw">ELSE</span> 0.0 <span class="kw">END</span>) <span class="kw">AS</span> timely_rate
+  <span class="kw">FROM</span> fact_complaint
+  <span class="kw">WHERE</span> state_code = <span class="str">'AZ'</span>
+    <span class="kw">AND</span> received_date &gt;= <span class="str">DATE '2024-01-01'</span>
+    <span class="kw">AND</span> received_date &lt;  <span class="str">DATE '2025-01-01'</span>
+  <span class="kw">GROUP BY</span> company
+)
+<span class="kw">SELECT</span> *,
+  <span class="fn">SUM</span>(complaints) <span class="kw">OVER</span> (<span class="kw">ORDER BY</span> complaints <span class="kw">DESC</span>) /
+  <span class="fn">SUM</span>(complaints) <span class="kw">OVER</span> () <span class="kw">AS</span> cumulative_share
+<span class="kw">FROM</span> company_volume
+<span class="kw">ORDER BY</span> complaints <span class="kw">DESC</span>;</code></pre></section>
+
+        <section id="action"><p class="eyebrow">Operating actions</p><h2>Move from SLA reporting to risk reduction</h2><div class="metric-tree"><div class="metric-node"><small>NOW</small><b>Segment the SLA</b><p>Report timely response by product, issue, and company instead of only in aggregate.</p></div><div class="metric-node"><small>NEXT</small><b>Build recurrence cohorts</b><p>Track repeat issue-company pairs and escalation patterns across rolling 30/90-day windows.</p></div><div class="metric-node"><small>MONITOR</small><b>Capacity trigger</b><p>Alert when segment volume exceeds its trailing average by a documented threshold.</p></div></div></section>
+
+        <section id="limits"><p class="eyebrow">Limitations</p><h2>What the data cannot establish</h2><ul><li>Complaint volume does not measure company market share or a true complaint rate.</li><li>Consumer narratives were not required for this analysis; issue labels are self-reported.</li><li>Timely response is a process measure, not proof of satisfactory resolution.</li><li>The analysis is descriptive; it does not claim that a company or product caused complaints.</li></ul></section>
+      </article>
+      <aside class="side-nav"><strong>On this page</strong><a href="#brief">Decision brief</a><a href="#data">Data & grain</a><a href="#quality">Quality controls</a><a href="#findings">Findings</a><a href="#sql">SQL pattern</a><a href="#action">Actions</a><a href="#limits">Limitations</a></aside>
+    </div></section>
+  </main>
+  <footer><div class="wrap footer-grid"><span>© <span data-year></span> Ivan Del Rio</span><a href="../index.html">Back to portfolio</a></div></footer><script src="../assets/site.js"></script>
+</body></html>
